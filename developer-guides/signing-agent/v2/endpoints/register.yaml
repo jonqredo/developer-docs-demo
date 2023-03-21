@@ -1,0 +1,71 @@
+openapi: 3.0.2
+info:
+  title:  Qredo Signing Agent V2
+  version: 1.0.0
+  description: >
+    - Qredo Signing Agent service interacts with [Partner API](https://developers.qredo.com/partner-api/api/swagger/) to register a Signing Agent to automate approvals according to your custody policy. 
+
+    - Authentication and encryption are required; set up your [API key and secret in the Qredo Web App](https://developers.qredo.com/signing-agent/v2-signing-agent/get-started/).
+
+  contact:
+    name: Qredo API Services
+    url: https://www.qredo.com
+    email: support@qredo.com
+
+servers:
+  - url: https://agent.example.org/api/v1
+    description: URL from which your HTTPS service is running.
+
+
+paths:
+  /register:
+    post:
+      summary: Register a new Signing Agent
+      description: >
+        This endpoint registers a Signing Agent and returns its `agentID`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRegisterRequest'
+      responses:
+        '200':
+          description: Success — `agentID` returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRegisterResponse'
+components:
+  schemas:
+
+    AgentRegisterResponse:
+      type: object
+      description: Payload returned on successful registration of Signing Agent with Partner API.
+      properties:
+        agentID:
+            description: Unique identifier for the Signing Agent.
+            example: 98cTMMSPrDdcDDVU8idhuJGK2U1P4vmQcsp8wnED8pPR
+            type: string
+        feedURL:
+            description: The feed WebSocket URL for the feed of the local Rest API service.
+            example: http://localhost:8007/api/v1/client/feed
+            type: string
+      required:
+        - agentID
+        - feedUrl
+
+    ClientRegisterRequest:
+      type: object
+      properties:
+        APIKey:
+            description: The API key for the Partner API, generated from within Web App.
+            example: eyJrZXkiOiJHM0Fo... (truncated)
+            type: string
+        base64PrivateKey:
+            description: The Base64-encoded private key pem of which the public key has been registered in the Partner API.
+            example: LS0tLS1CRUdJTiBS... (truncated)
+            type: string
+        name:
+            description: User-assigned name of the agent.
+            example: test-agent
+            type: string

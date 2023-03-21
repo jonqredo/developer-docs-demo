@@ -1,0 +1,1788 @@
+openapi: 3.0.2
+info:
+  title:  Qredo API V1
+  version: 0.1.0
+  description: >
+    - Qredo API V1 provides an essential subset of the services provided by Qredo. 
+
+    - Authentication and encryption are required; find your [API key and secret in the Qredo Web App](https://developers.qredo.com/get-started/quickstart/).
+
+    - Download the <a href="https://developers.qredo.com/api-reference/qredo-api/swagger.yaml">Specification YAML</a>.
+
+  contact:
+    name: Qredo API Services
+    url: https://www.qredo.com
+    email: support@qredo.com
+
+servers:
+  - url: https://api.qredo.network/qapi/v1
+    description: Production Server
+
+  - url: https://sandbox-api.qredo.network/qapi/v1
+    description: Sandbox API Server
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Read-only API
+    description: >-
+      The Read-only API provides a suite of endpoints that return data related to Personal and Organizational accounts; Wallets; and Funds.
+
+  - name: Web3 API
+    description: The Web3 API provides a suite of endpoints that support the basic functionality required to carry out transactions and view a transaction's status for Connected Wallets. Transactions submitted via this Connected Wallet will be available from the Qredo Web App interface.
+
+paths:
+  /account:
+    get:
+      tags:
+        - Read-only API
+      summary: Get account information
+      description: >
+        This endpoint returns account data based on the API key of the Person or Organization passed. The response depends upon the account type, i.e. it differs for Personal and Organizational accounts (see the [developer guide](/pages/developer-guides/qredo-api/read-only)).
+        <br>
+        
+        For a Personal account, do not expect relational data. That is, the response will not include details of whether that Personal account is part of any Organizational accounts. Such data must be gathered from the Organizational perspective. Similarly, there is no inter-relational data with other accounts, such as whether a Personal account is an approver for another Personal or Organizational account. The response for Organization accounts provides details of the Organization and its associated members. 
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+      responses:
+        '200':
+          description: Success — account information returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getAccountInfoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+  /balance:
+    get:
+      tags:
+        - Read-only API
+      summary: Get account balance
+      description: This endpoint returns the balance of any active Wallets held by the Personal or Organizational account linked to the API key passed. 
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+      responses:
+        '200':
+          description: Success — balance returned. If more than one Wallet is active, an array is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getBalanceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+  /funds:
+    get:
+      tags:
+        - Read-only API
+      summary: Get list of funds
+      description: > 
+        This endpoint returns a list of Funds held by the Personal or Organizational account linked to the API key passed. To include archived Funds, pass `true` for the boolean switch `archived`.
+        
+        The response includes the Wallets associated with the Fund; this includes each Wallet's asset type, deposit address (where applicable), balance, policies, and approvers.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: false
+          schema:
+            title: archived
+            type: boolean
+          in: query
+          name: archived
+      responses:
+        '200':
+          description: Success - Funds returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFundsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+  /funds/{fund_id}:
+    get:
+      tags:
+        - Read-only API
+      summary: Get Fund info by ID
+      description: This endpoint returns the properties of the specified Fund based on the `fund_id`.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: true
+          schema:
+            title: Fund ID
+            type: string
+          name: fund_id
+          in: path
+      responses:
+        '200':
+          description: Success — Fund data returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFundInfoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /funds/{fund_id}/ledger:
+    get:
+      tags:
+        - Read-only API
+      summary: Get transactions by Fund ID
+      description: This endpoint returns the transaction history for the Wallets associated with the specified Fund based on the `fund_id`. For each Wallet, the transactions are returned in chronological order, with the most recent first.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: true
+          schema:
+            title: Fund ID
+            type: string
+          name: fund_id
+          in: path
+      responses:
+        '200':
+          description: Success — transaction history returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TxHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /trustedparties:
+    get:
+      tags:
+        - Read-only API
+      summary: List trusted parties
+      description: > 
+        This endpoint returns a list of a Personal account's trusted parties (pending and active). Note that the result does not include the account owner, i.e. trusted parties are those that have been added as custodians to an account. Attempting to use this service with an API key linked to an Organization account will raise an error.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+      responses:
+        '200':
+          description: Success — trusted parties returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getTrustedPartiesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+
+  /wallet/{wallet_id}/history:
+    get:
+      tags:
+        - Read-only API
+      summary: Get transactions by Wallet ID
+      description: This endpoint returns the transaction history of the specified Wallet based on the `wallet_id`.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: true
+          schema:
+            title: Wallet ID
+            type: string
+          name: wallet_id
+          in: path
+      responses:
+        '200':
+          description: Success — transaction history returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getWalletHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /transaction:
+    post:
+      tags:
+        - Web3 API
+      summary: Create new transaction
+      description: >
+        This endpoint creates an outgoing Web3 API transaction.
+
+        A transaction may fit with several scenarios: 
+        
+        ##### An instruction to move an asset from a Qredo-controlled Wallet to another Wallet
+
+        Pass the `to`, `from`, `value` of the asset, `gasLimit`, and cost limits per unit of gas according to your transaction type (type 0/1 or type 2)
+
+        ##### An instruction to a smart contract that results in computational costs but does not transfer an asset
+
+        Pass the `to`, `from`, `value` as "0", `gasLimit`, `data` (to communicate with the smart contract), and cost limits per unit of gas according to your transaction type (type 0/1 or type 2)
+
+        ##### An instruction to a smart contract that does not result in computational cost (e.g. balance request)
+
+        Pass the `to`, `from`, `value` as "0", `gasLimit` as "0", and `data` (to communicate with the smart contract)
+
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                  description: Wallet address funds originate from.
+                  example: '0x84CE2138E54b1852689132FD73dDC4D3973a44B8'
+                to:
+                  type: string
+                  description: The receiver address (Wallet or smart contract).
+                  example: '0x94GE4738E54b2952689132FD73dDC4D3973a47J2'
+                value:
+                  type: string
+                  description: The amount to send; you may pass "0" for transactions that do not transfer assets.
+                  example: '100'
+                gasLimit:
+                  type: string
+                  description: The maximum units of gas units that the user agrees may be consumed by the transaction. Some networks refer to this as `gas`; you may pass "0" for transactions that do not create an on-chain computational load.
+                  example: '21000'
+                gasPrice:
+                  type: string
+                  description: Price user is willing to pay per unit, as per legacy EVM (Type 0 and Type 1 transactions). **Do Not** use properties `maxFeePerGas` or `maxPriorityFeePerGas` with this property [see transactions](https://developers.qredo.com/glossary/transactions/).
+                  example: '2100'
+                maxFeePerGas:
+                  type: string
+                  description: As per EIP-1559/Type 2 transaction; maximum amount of gas units the sender is willing to spend on the transaction (includes `maxPriorityFeePerGas` and base fee per gas). Don't use this property with `gasPrice` [see transactions](https://developers.qredo.com/glossary/transactions/).
+                  example: '300'
+                maxPriorityFeePerGas:
+                  type: string
+                  description: As per EIP-1559; The maximum fee (per each unit of gas) to be included as the validator's tip. Don't use this property with `gasPrice` [see transactions](https://developers.qredo.com/glossary/transactions/).
+                  example: '10'
+                data:
+                  type: string
+                  description: User-defined data for interacting with a smart contract.
+                  example: 
+                chainID:
+                  type: string
+                  description: Unique identifier for the L1 chain transaction will occur on, defaults to ETH mainnet, pass ID for alternative chains.
+                  example: '1'
+                note:
+                  type: string
+                  description: User-defined, optional field to include arbitrary data.
+                  example: 'Test Signing App test 34'
+              required:
+                - from
+                - to
+                - value
+                - gasLimit
+      responses:
+        '200':
+          description: Success - transaction request created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/txInfoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+
+  /transactions/feed:
+    get:
+      tags:
+        - Web3 API
+      summary: WebSocket feed updates
+      description: This endpoint returns updates on the status of transactions.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+      responses:
+        '200':
+          description: Success — approval statuses returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/txFeedStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+
+  /transactions/{tx_id}/approvals:
+    get:
+      tags:
+        - Web3 API
+      summary: Get transaction approvers
+      description: This endpoint returns the approvers associated with a transaction and the approvers' response status based on the transaction ID, `tx-id`, passed.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: true
+          schema:
+            title: Transaction ID
+            type: string
+          name: tx_id
+          in: path
+      responses:
+        '200':
+          description: Success — approvers returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getTransactionHistoryApprovalsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /transactions/{tx_id}/status:
+    get:
+      tags:
+        - Web3 API
+      summary: Get transaction status
+      description: This endpoint returns the status of a transaction based on the transaction ID, `tx_id`.
+      parameters:
+        - required: true
+          schema:
+            title: signature
+            type: string
+          in: header
+          name: qredo-api-sig
+        - required: true
+          schema:
+            title: qredo-api-ts
+            type: string
+          in: header
+          name: qredo-api-ts
+        - required: true
+          schema:
+            title: api-key
+            type: string
+          in: header
+          name: qredo-api-key
+        - required: true
+          schema:
+            title: Transaction ID
+            type: string
+          name: tx_id
+          in: path
+      responses:
+        '200':
+          description: Success - transaction returned with status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/txInfoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientPrivileges'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      description: API Key passed in header.
+      type: apiKey
+      in: header
+      name: qredo-api-key
+
+  schemas:
+
+    OkResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        msg:
+          type: string
+          example: OK
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        msg:
+          type: string
+        detail:
+          type: object
+          properties:
+            reason:
+              type: string
+
+    asset:
+      type: object
+      properties:
+        available:
+          format: int64
+          type: integer
+          description: ''
+          example: 1500
+        pendingIn:
+          format: int64
+          type: integer
+          description: This includes inbound transactions from atomic swaps that still require a user's approval.
+          example: 20
+        pendingOut:
+          format: int64
+          type: integer
+          description: This includes all pending outbound transactions from atomic swaps and transfers of assets out.
+          example: 0
+        scale:
+          format: double
+          type: number
+          example: 1
+          description: ''
+        total:
+          format: int64
+          type: integer
+          description: >
+            `total` balance = `available` + `pendingIn` - `pendingOut`.
+          example: 2000
+
+    accountInfo:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/orgAccountInfo'
+        - $ref: '#/components/schemas/personalAccountInfo'
+
+    orgAccountInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the Organization account.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        name:
+          type: string
+          description: Name of the Organization.
+          example: Tim Drake Ltd.
+        email:
+          type: string
+          description: Email of the Organization account owner.
+          example: test5@qredo
+        domain:
+          type: string
+          description: Domain associated with the Organization.
+          example: acme.com
+        address:
+          type: string
+          description: Organization address or personal address of Organization account owner.
+          example: 42 Stamford Rd. Singapore
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/orgMember'
+        connectClients:
+          type: array
+          description: ''
+          example: 27beRZM6jV2lvOz22H1JY0yi9sS
+          items:
+            type: string
+        rpcNetworks:
+          type: array
+          items:
+            $ref: '#/components/schemas/rpcNetwork'
+        partnerAPI:
+          type: boolean
+          example: true
+          description: True means that the user can create Partner API keys (this is switched by sales team).
+        userAPIKeys:
+          type: object
+          properties:
+            number_of_keys:
+              type: integer
+              description: Count of API keys currently active for the Organization. 
+              example: 1
+            user_api_keys:
+              type: array
+              items:
+                $ref: '#/components/schemas/userAPIKeyInfo'
+
+    personalAccountInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: UID for the Personal account.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        username:
+          type: string
+          description: Username for the person associated with a Personal account.
+          example: Tim-D
+        name:
+          type: string
+          description: First and last names of the person associated with a Personal account.
+          example: Tim Drake
+        email:
+          type: string
+          example: test5@qredo
+        defaultFiat:
+          type: string
+          example: USD
+        testnetAssets:
+          type: boolean
+          example: true
+        partnerAPI:
+          type: boolean
+          example: true
+          description: True means that the user can create Partner API keys (this is switched by sales team).
+        userAPIKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/userAPIKeyInfo'
+
+    orgMember:
+      type: object
+      properties:
+        id:
+          type: string
+          example: Ec7K7j7cN9C1eNKHahzA8CcXxjQoA8NaxWWaDHJihTRB
+          description: ''
+        username:
+          type: string
+          example: testUser1
+          description: ''
+        email:
+          type: string
+          example: test1@venture-capital.com
+        name:
+          type: string
+          example: Test User One
+          description: ''
+
+
+    rpcNetwork:
+      type: object
+      properties:
+        name:
+          type: string
+          example: custom_network1
+          description: ''
+        chainID:
+          type: string
+          example: 1
+          description: ''
+
+
+    userAPIKeyInfo:
+      title: UserAPIKeyInfo
+      type: object
+      properties:
+        keyID:
+          type: string
+          example: a0w0f-DqCew-AA
+          description: ''
+        name:
+          type: string
+          example: The New Key
+          description: ''
+
+    WalletType:
+      title: Wallet type
+      type: integer
+      default: 0
+      description: >
+        Wallet type:
+          0: Standard Wallet
+          1: Dedicated Wallet
+          2: Multi-counterparty Wallet
+          3: Vesting Wallet
+          4: External Wallet (MMI, Wallet Connect, Web3 API Wallet)
+          5: Fee Wallet
+      example: 0
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+
+    TxStatus:
+      title: Transaction Status
+      type: string
+      enum: 
+        - approved
+        - expired
+        - initiate_rejected
+        - pending_initiate
+        - pending
+
+    EntityType:
+      title: Entity type
+      description: A restricted list describing the entity. Choose from user, company, or core-client (automated Signing Agent).
+      type: string
+      example: user
+      enum: 
+        - user
+        - company
+        - core-client
+
+    PolicyMember:
+      description: Container for member information.
+      type: object
+      properties:
+        dedicated:
+          type: boolean
+          description: True means that this policy member is an dedicated custodian that has specific custody rights on the Wallet.
+          example: true
+        entity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Entity"
+
+    Entity:
+      title: Entity
+      type: object
+      properties:
+        accountCode:
+          type: string
+          description: UID for the account.
+          example: 3QEf1i3L8L4264CQEMkBmUxVKMt7rLcVxn14ZKfcuKK3
+        address: 
+          type: string
+          description: For a Personal account, expect email; for Organization, expect physical address; for an automated Signing Agent, this is null.
+          example: ''
+        id:
+          type: string
+          description: Unique identifier for an entity; as per `entityID`.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        initials:
+          type: string
+          description: Initials for Entity.
+          example: TD
+        name:
+          type: string
+          description: A user-assigned name for the Entity.
+          example: Tim Drake
+        owner:
+          type: string
+          description: >
+              An automated Signing Agent and an Organization have parent owners, i.e. `entityID`. Expect null for a Personal account.
+          example: HJQvAwB9Gzu3WhB7K7rAD5G7tj56Wv4bekm3VaQutHo1
+        type:
+          $ref: '#/components/schemas/EntityType'
+        user:
+          type: object
+          nullable: true
+          properties:
+            firstName:
+              type: string
+              example: Tim
+            lastName:
+              type: string
+              example: Drake
+            email:
+              type: string
+              example: timdrake@venture-capital.com
+            userName:
+              type: string
+              example: Tim-D
+            partner:
+              type: boolean
+              example: false
+              description: True means that the user can create Partner API keys (this is switched by sales team).
+        company:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              description: A user-assigned name for the company.
+              example: ACME Corp
+        core-client:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              example: signing-agent-6480
+              description: User-assigned name for an automated Signing Agent.
+
+    FundMember:
+      title: FundMember
+      type: object
+      description: A Fund member is a user who has certain permissions within a Fund.
+      properties:
+        entity:
+          $ref: '#/components/schemas/Entity'
+        permissions:
+          $ref: '#/components/schemas/Permissions'
+
+
+    Permissions:
+      type: object
+      description: A map of permissions states for a member.
+      properties:
+        custodian:
+          type: boolean
+          description: True means the member is a custodian.
+          example: false
+        fundManager:
+          type: boolean
+          description: True means the member is invite new members to the Fund.
+          example: true
+        trader:
+          type: boolean
+          description: True means the member can transfer funds out of a Wallet.
+          example: true
+
+    Policy:
+      title: Custody policy
+      type: object
+      properties:
+        dedicatedWalletCount:
+          type: integer
+          description: Number of Wallets the policy applies to.
+          example: 1
+          minimum: 1
+        entityID:
+          description: The owner of the policy, i.e. the creator.
+          type: string
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        funds:
+          type: array
+          description: List of Funds this policy is applied to.
+          example: 26pEnVDTctYQnvP8ydqAJ2fJ5Aw
+          items:
+            type: string
+        fundsCount:
+          type: integer
+          description: Number of Funds the policy applies to.
+          example: 1
+        id:
+          type: string
+          description: Unique identifier for a policy; a policyID.
+          example: 26pEnawkFtvu6xnWXOvwd41ZQCQ
+        locked:
+          type: boolean
+          description: ''
+          example: true
+        lockedTxID:
+          type: string
+          description: ''
+          example: 279O1KIYyr3g3eLqUEfCC5dtyWO
+        membersCount:
+          type: integer
+          description: Count of members associated with the policy.
+          example: 1
+        members:
+          title: Custody group members
+          description: Members who are assigned as approvers for transactions.
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyMember'
+        name:
+          description: User-assigned policy name.
+          type: string
+          example: Main Fund Withdraw policy.
+        threshold:
+          title: Custody group threshold
+          description: Minimum number of custodian approval signatures out of the total number for a transaction to happen.
+          type: integer
+          minimum: 1
+        walletCount:
+          type: integer
+          description: The number of Wallets associated with the policy.
+          example: 1
+          minimum: 1
+
+    Fund:
+      properties:
+        fundID:
+          type: string
+          description: 'Unique identifier of a Fund; as per `fund_id`.'
+          example: 279O1KIYyr3g3eLqUEfCC5dtyWO
+        name:
+          type: string
+          description: User-assigned name for the Fund.
+          example: Main fund.
+        theme:
+          format: integer
+          type: number
+          description: Frontend control.
+        holdings:
+          format: object
+          type: object
+
+    Wallet:
+      properties:
+        fundID:
+          format: string
+          type: string
+          description: 'Unique identifier of a Fund (a collection of Wallets); as per `fund_id`.'
+          example: 279O1KIYyr3g3eLqUEfCC5dtyWO
+        walletID:
+          format: string
+          type: string
+          description: Unique identifier for a Wallet, as per `wallet_id`.
+          example: 8Drqe8hTFJwogWuYzgq1F82cuh6e7CEuKg9agjNSqzec
+        asset:
+          format: string
+          type: string
+          description: Asset type; see [supported assets](https://qredo.zendesk.com/hc/en-us/articles/4407177502097-Supported-Assets).
+          example: ETH
+
+    FundInfo:
+      type: object
+      properties:
+        custodygroup_withdraw:
+          description: Withdrawal custody group ID.
+          type: string
+          example: 26pEnWrWRbuz6mrZ0WIOtvEARri
+        custodygroup_tx:
+          title: Transfer custody group ID.
+          type: string
+          example: 26pEnawkFtvu6xnWXOvwd41ZQCQ
+        description:
+          type: string
+          description: User-assigned description for the Fund.
+          example: Ether Fund.
+        fund_id:
+          format: string
+          type: string
+          description: 'Unique identifier of a Fund (a collection of Wallets); as per `fund_id`.'
+          example: 279O1KIYyr3g3eLqUEfCC5dtyWO
+        name:
+          type: string
+          description: User-assigned name for the Fund.
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/FundMember'
+        policyTx:
+          $ref: '#/components/schemas/Policy'
+        policyWithdrawl:
+          $ref: '#/components/schemas/Policy'
+        wallets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletInfo'
+
+    WalletInfo:
+      title: Wallet info
+      type: object
+      properties:
+        address:
+          description: Deposit address.
+          type: string
+          example: 0x84CE2138E54b1852689132FD73dDC4D3973a44B8
+        address_type:
+          type: string
+          description: Asset type of the Wallet, i.e. L1 chain.
+          example: ETH Ropsten Testnet
+        asset:
+          type: string
+          description: Asset type; see [supported assets](https://qredo.zendesk.com/hc/en-us/articles/4407177502097-Supported-Assets).
+          example: ETH
+        balance:
+          description: Current balance of asset.
+          format: integer
+          type: number
+          example: 100
+        name:
+          type: string
+          description: User-assigned name for the Wallet.
+          example: Ether Wallet.
+        policy_tx:
+          $ref: '#/components/schemas/Policy'
+        policy_withdraw:
+          $ref: '#/components/schemas/Policy'
+        short_code:
+          type: string
+          description: User-friendly handle as alternative to Wallet address. Note, the example deliberately obscures the word to prevent these three words from representing an actual Wallet.
+          example: surrou*nd are* t*na
+        status:
+          type: string
+          description: Wallet status based on a fixed list.
+          enum:
+            - expired
+            - pending
+            - ready
+            - rejected
+          example: connected
+        type:
+          $ref: '#/components/schemas/WalletType'
+        wallet_id:
+          type: string
+          description: Unique identifier (internal) for the Wallet.
+          example: G7VA2XdwyVfC1dmwtMcMCXPBicaT9b4ACsSdQ2MWduzS
+        connected:
+          title: Connected external counterparties.
+          nullable: true
+          type: array
+          items:
+            type: object
+            properties:
+              client_id:
+                type: string
+                description: Unique identifier for an external user that may perform customized functions on a Wallet such as sweep operations.
+                example: 4AY7NoRxrT1YnLnVxh3iCWZNC93XuvQAtVHmVnS5Z3RR
+              counterparty_id:
+                type: string
+                description: Unique identifier for recipient of a customized function such as a sweep.
+                example: GVGpBFekefnDZPWXGbtrCPcXgR8ZvtRRLo1RbxyJDH2S
+              name:
+                type: string
+                example: Bank One
+              status:
+                type: string
+                description: Status of the external user.
+                enum:
+                  - initiated
+                  - connected
+                  - rejected
+                  - expired
+                example: expired
+
+    TxType:
+      type: integer
+      description: >
+        1: Withdraw
+        2: Transfer
+        3: Swap
+        4: Sweep
+        5: UpdatePolicy
+        6: Deposit 
+        7: UpdateWalletConnect
+        8: ExternalSign
+      example: 2
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+ 
+    L1TxList:
+      type: array
+      items:
+        type: string
+        description: Transaction ID on Layer 1 blockchain.
+        example: HVxZx6sxUwV2dxJP7LJwq99Do7xzTxMrAWDdUtwXMxr5
+
+    TxHistoryItem:
+      properties:
+        txID:
+          type: string
+          description: Transaction ID; as per `tx_id`.
+          example: 279MBUMtAX3lVxXDOgXzG9jNDDu
+        chainTxID:
+          type: string
+          description: On-chain transaction ID; as per `chain_tx_id`.
+          example: D469C5E53C9178AFF3B486B3727B6CE99F1417380A6651AD6C2913E2D5949B45
+        fundID:
+          type: string
+          description: 'Unique identifier of a Fund (a collection of Wallets). As per fund_id.'
+          example: 279O1KIYyr3g3eLqUEfCC5dtyWO
+        walletID:
+          type: string
+          description: Unique identifier for a Wallet, as per `wallet_id`.
+          example: 8Drqe8hTFJwogWuYzgq1F82cuh6e7CEuKg9agjNSqzec
+        timestamp:
+          type: integer
+          format: unix-timestamp
+          example: 1648734912
+        type:
+          $ref: '#/components/schemas/TxType'
+        asset:
+          type: string
+          description: Asset type; see [supported assets](https://qredo.zendesk.com/hc/en-us/articles/4407177502097-Supported-Assets).
+          example: BTC
+        amount:
+          type: number
+          format: double
+          example: 0.001156
+          description: Amount of asset to be transferred; see `netAmount` for value received.
+        fees:
+          type: number
+          format: double
+          description: Fee applied to transaction, as per `fee`.
+          example: 0.00003
+        netAmount:
+          type: number
+          format: double
+          description: 'This is what the recipient receives: `netAmount` = `amount` - `fees`.'
+          example: 0.001126
+        counterpartyID:
+          type: string
+        counterpartyName:
+          type: string
+        counterpartyEntity:
+          $ref: '#/components/schemas/Entity'
+        address:
+          type: string
+          description: Wallet address of recipient.
+          example: FTbnbWDyMnrfb25azowkRTopLK9jrdJtAec8qBE6Ri5d
+        reference:
+          type: string
+          description: User-assigned reference.
+          example: Custom reference.
+        benefitOf:
+          type: string
+          format: string
+          description: The beneficiery of the transaction.
+        accountNo:
+          type: string
+          format: string
+        later1TxID:
+          $ref: '#/components/schemas/L1TxList'
+
+    WalletHistoryItem:
+      properties:
+        txID:
+          type: string
+          description: Internal transaction ID as per `tx_id`.
+          example: 279MBUMtAX3lVxXDOgXzG9jNDDu
+        chainTxID:
+          type: string
+          description: Qredo L2 on-chain transaction ID as per `chain_tx_id`.
+          example: 5F6132993616A7C0E77F2C75DDD2239A23D81FBD106C053489249437670581F7
+        walletID:
+          type: string
+          description: Wallet ID as per `wallet_id`.
+          example: EQ6bXGsrv6h5svieExwKaKSLBMmXDuokgD51xHRPtdq1
+        timestamp:
+          type: integer
+          format: unix-timestamp
+          description: Unix epoch timestamp of the transaction.
+          example: 123412528
+        asset:
+          type: string
+          description: Asset type; see [supported assets](https://qredo.zendesk.com/hc/en-us/articles/4407177502097-Supported-Assets).
+          example: BTC
+        amount:
+          type: integer
+          format: double
+          description: Amount of asset to be transferred; see `netAmount` for value received.
+          example: 0.001123
+        fees:
+          type: integer
+          format: double
+          description: Fee applied to transaction, as per `fee`.
+          example: 0.000003
+        netAmount:
+          type: integer
+          format: double
+          description: 'Amount the recipient receives: `netAmount` = `amount` - `fees`.'
+          example: 0.001126
+        status:
+          $ref: '#/components/schemas/TxStatus'
+
+    UserActionStatus:
+      title: Transaction Status
+      type: string
+      description: Status of the transaction.
+      enum: 
+        - approved
+        - expired
+        - pending
+        - rejected
+        - unknown
+
+    txApproval:
+      properties:
+        txID:
+          type: string
+          format: string
+          description: Transaction ID; as per `tx_id`.
+          example: 279MBUMtAX3lVxXDOgXzG9jNDDu
+        userID:
+          type: string
+          format: string
+          description: User ID; as per `user_id`.
+          example: EM6rPkjEA479p7f3sXxbUPH7TfMzvoVv9eEEGR6w8gqU
+        actionID:
+          type: string
+          format: string
+          description: Action ID; as per `action_id`.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        external:
+          type: boolean
+          format: string
+          description: ''
+          example: false
+        signature:
+          type: string
+          format: byte
+          description: Verification that approval was given.
+          example: 5G7tj56Wv4bekm3VaQEM6rPkjEA479p7f3sXxbUvAwB9Gzu3WhB7K7rAD26pEnWrWRbu
+        signatures:
+          type: object
+          description: Legacy property.
+        firstName:
+          type: string
+          format: string
+          description: First name of approver.
+          example: Adam
+        lastName:
+          type: string
+          format: string
+          description: Last name of approver.
+          example: Smith
+        email:
+          type: string
+          format: string
+          description: Email of approver; applied during their registration with Qredo.
+          example: adam.smith@venture-capital.com
+        username:
+          type: string
+          format: string
+          description: Username of approver; applied during their registration with Qredo.
+        status:
+          $ref: '#/components/schemas/UserActionStatus'
+        accountCode:
+          type: string
+          format: string
+          description: Unique identifier of an on-chain ID document.
+          example: 3QEf1i3L8L4264CQEMkBmUxVKMt7rLcVxn14ZKfcuKK3
+
+    getBalanceResponse:
+      type: object
+      properties:
+        assets:
+            $ref: '#/components/schemas/asset'
+      example:
+        assets:
+          [
+            BTC: {
+              total: 1000,
+              available: 980,
+              pendingIn: 20,
+              pendingOut: 0,
+              scale: 1,
+            },
+            ETH: {
+              total: 2000,
+              available: 1500,
+              pendingIn: 500,
+              pendingOut: 0,
+              scale: 1,
+            }
+          ]
+
+    getAccountInfoResponse:
+      type: object
+      properties:
+        settings:
+          $ref: '#/components/schemas/accountInfo'
+      
+              
+      
+    getFundsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: number
+          example: 2
+        funds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fund'
+          example: 
+            - ["fund_id": "26pEnVDTctYQnvP8ydqAJ2fJ5Aw",
+              "name": "Main Fund"]
+            - ["fund_id": "27yIrx70OvrScz1gSH7Aa0RZelf",
+              "name": "Tracker Fund"]
+
+    getFundInfoResponse:
+      type: object
+      properties:
+        fundInfo:
+          $ref: '#/components/schemas/FundInfo'
+# Killing the example, no longer matches the endpoint output
+
+    TxHistoryWalletInfo:
+      type: object
+      properties:
+        walletID:
+          type: string
+          description: Unique identifier for a Wallet, as per `wallet_id`.
+          example: 8Drqe8hTFJwogWuYzgq1F82cuh6e7CEuKg9agjNSqzec
+        fundName:
+          type: string
+          description: Owner-assigned name for the Fund.
+          example: Fund 1
+        walletName:
+          type: string
+          description: Owner-assigned name for the Wallet.
+          example: Wallet 1
+        type:
+          $ref: '#/components/schemas/WalletType'
+
+    TxHistoryResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/TxHistoryItem'
+        total:
+          type: integer
+          format: number
+        wallets:
+          $ref: '#/components/schemas/TxHistoryWalletInfo'
+
+    trustedpartyMember:
+      properties:
+        userID:
+          type: string
+          format: string
+          description: User ID; as per `userId`. The UID of the trusted member (not their account ID).
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        firstName:
+          type: string
+          format: string
+          description: First name of trusted party of a Personal account.
+          example: Adam
+        lastName:
+          type: string
+          format: string
+          description: Last name of trusted party of a Personal account.
+          example: Smith
+        email:
+          type: string
+          format: string
+          description: Email of trusted party of a Personal account.
+          example: adam.smith@venture-capital.com
+        username:
+          type: string
+          format: string
+          example: adamsmith01
+        internal:
+          type: boolean
+          format: string
+          example: true
+          description: Legacy.
+        pending:
+          type: boolean
+          format: string
+          example: true
+          description: If true, the user has not yet completed the Qredo accept-trusted-party-flow.
+        created:
+          type: integer
+          format: unix-timestamp
+          description: Unix epoch timestamp of the trusted party completing the flow, i.e. added as a trusted party.
+          example: 97048923790
+
+    getWalletHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletHistoryItem'
+
+    getTrustedPartiesResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/trustedpartyMember'
+
+    txInfoResponse:
+      type: object
+      properties:
+        accountID:
+          type: string
+          description: Unique identifier of the Entity that holds the Wallet originating this transaction.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        chainID:
+          type: string
+          description: Unique identifier for the L1 chain transaction will occur on.
+          example: 1
+        createdBy:
+          type: string
+          description: Unique identifier for the user that initiated the transaction request.
+          example: 5G7tj56Wv4bekm3VaQutHo1HJQvAwB9Gzu3WhB7K7rAD
+        data:
+          type: string
+          description: User-defined data for interacting with a smart contract.
+          example:
+        from:
+          type: string
+          description: Wallet address funds originate from.
+          example: '0x84CE2138E54b1852689132FD73dDC4D3973a44B8'
+        gasLimit:
+          type: string
+          description: The maximum units of gas units that can be consumed by the transaction.
+          example: 21000
+        gasPrice:
+          type: string
+          description: Price user is willing to pay per unit, as per legacy EVM (Type 0 and Type 1 transactions).
+          example: 2100
+        network:
+          type: string
+          description: ''
+          example: ''
+        nonce:
+          type: string
+          description: Transaction nonce; a sequentially-incrementing counter which indicates the transaction number from the account.
+          example: ''
+        rawTX:
+          type: string
+          description: Raw transaction in hexadecimal format for the relevant L1 network.
+          example: 0xdd800115943d6a96164c95b143d1e0eb9fab95710b9c99faff0180808080
+        signedTx:
+          type: string
+          description: Signed transaction data in hexadecimal format. This is the property that is broadcast to initiate the transaction.
+          example: 0xf85d800115943d6a96164c95b143d1e0eb9fab95710b9c99faff01802ea016aa718c89ea2a36a764c8d594394a20aa09b6fff0bea140ba9d6386c5e5ef6ea0324de8ff3019063f20b382059a5dedbccc37d500f743b6c452a88d1604516631
+        status:
+          type: string
+          description: Transaction status.
+          example: Confirmed
+        timestamps:
+          type: object
+          properties:
+            created:
+              type: integer
+              format: unix-timestamp
+            pending:
+              type: integer
+              format: unix-timestamp
+            authorized:
+              type: integer
+              format: unix-timestamp
+            approved:
+              type: integer
+              format: unix-timestamp
+            rejected:
+              type: integer
+              format: unix-timestamp
+            failed:
+              type: integer
+              format: unix-timestamp
+        to:
+          type: string
+          description: The receiver address (Wallet or smart contract).
+          example: '0x94GE4738E54b2952689132FD73dDC4D3973a47J2'
+        txHash:
+          type: string
+          description: Transaction hash from L1 chain.
+          example: ''
+        txID:
+          type: string
+          description: Transaction ID; as per `tx_id`.
+          example: 279MBUMtAX3lVxXDOgXzG9jNDDu
+        value:
+          type: string
+          example: 100
+          description: The amount to send.
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/txStatusUpdate'
+
+    txStatusUpdate:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Transaction ID; as per `tx_id`.
+          example: 279MBUMtAX3lVxXDOgXzG9jNDDu
+        message:
+          type: string
+          description: Server message.
+          example: ''
+        status:
+          type: string
+          description: ''
+          example: ''
+          enum: 
+            - created
+            - pending
+            - authorized
+            - approved
+            - rejected
+            - failed
+        timestamp:
+          type: integer
+          format: unix-timestamp
+          description: Timestamp of the status update.
+          example: ''
+
+    getTransactionHistoryApprovalsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of approval responses received.
+          example: 1
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/txApproval'
+
+
+    txFeedStatus:
+      type: object
+      properties:
+        txID:
+          type: string
+          example: "2H1uS4xWxmqYsXvvBQJ8Ns4PjXl"
+          description: Transaction ID; as per `tx_id`.
+        txHash:
+          type: string
+          example: "0x470030d54a8f9415ad5d41b9740e93f320a316994dec1f550c6da6e94a399df5"
+          description: Transaction hash from L1 chain.
+        status:
+          type: string
+          description: Current status of the transaction as per most recent timestamp.
+          items:
+            $ref: '#/components/schemas/status'
+        timestamps:
+          type: object
+          properties:
+            authorized:
+              description: Timestamp for transaction status change event, authorized.
+              type: integer
+              format: unix-timestamp
+              example: 1667464907
+            created:
+              description: Timestamp for transaction status change event, created.
+              type: integer
+              format: unix-timestamp
+              example: 1667464907
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 2H1uS684DljLKlWdU3lHdRALOgF
+                description: Unique identifier for the status update event, eventID.
+              timestamp:
+                description: Timestamp for transaction status change event.
+                type: integer
+                format: unix-timestamp
+                example: 1667464907
+              status:
+                type: string
+                items:
+                  $ref: '#/components/schemas/status'
+              message:
+                type: string
+                example: custodian approved
+                description: Additional data around status change.
+        nonce:
+          type: integer
+          description: Transaction nonce; a sequentially-incrementing counter which indicates the transaction number from the account.
+          example: 0
+        gasPrice:
+          type: string
+          description: Price user is willing to pay per unit, as per legacy EVM (Type 0 and Type 1 transactions).
+          example: 0
+        gasLimit:
+          type: string
+          description: The maximum units of gas units that can be consumed by the transaction.
+          example: 21
+        from:
+          type: string
+          example: '0x58AC3F6b5Fd71013725f1FEB26A9Cd8Cbc00672F'
+          description: Wallet address funds originate from.
+        to:
+          type: string
+          example: 'AjG2UM3tbmNpSiigKijJFLFxyQkQ1FJcK3a5d5CZjo7h'
+          description: The receiver address (Wallet or smart contract).
+        value:
+          type: string
+          example: 1
+          description: The amount to send.
+        data:
+          type: string
+          example: >
+            0000000000000000000000004f6742badb049791cd9a37ea913f2bac38d012792 000000000000000000000000000000000000000000000000000000003b0559f4
+          description: User-defined data for interacting with a smart contract.
+        rawTX:
+          type: string
+          description: Raw transaction in hexadecimal format for the relevant L1 network.
+          example: pALiBYABggfQFZQAAAAAAAAAAAAAAAAAAAAAAAAAAAGAwICAgA
+        createdBy:
+          type: string
+          description: Unique identifier for the user that initiated the transaction request.
+          example: bi5fu9ufvCkDQA
+        accountID:
+          type: string
+          example: 249F7eZVGwcmQjpktlnWKsUupwU
+          description: Unique identifier of the Entity that holds the Wallet originating this transaction.
+        network:
+          type: string
+          example: ""
+          description: Expect null for this value while supported chains are all EVM-compatible.
+        chainID:
+          type: string
+          description: Unique identifier for the L1 chain transaction will occur on, default is ETH mainnet.
+          example: 5
+
+    status:
+      title: Transaction Status
+      description: Status of a transaction.
+      type: string
+      enum:
+        - pending
+        - created
+        - authorized
+        - approved
+        - expired
+        - cancelled
+        - rejected
+        - queued
+        - signed
+        - scheduled
+        - pushed
+        - confirmed
+        - mined
+        - failed
+      example: created
+
+  responses:
+    Ok:
+      description: Success.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OkResponse'
+    NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The specified resource already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InsufficientPrivileges:
+      description: Insufficient priviliges to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
